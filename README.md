@@ -1,6 +1,6 @@
 # PROJECT - Preferential Randomisation: Fairness Interventions & SHAP Explanations in Healthcare 
 
-This repository contains all the files necessary for MEG analysis.
+This repository contains all the files necessary for Fairness Interventions & SHAP Explanations in Healthcare.
 
 ## Requirements
 ```bash
