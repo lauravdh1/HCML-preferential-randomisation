@@ -1,4 +1,4 @@
-# log written 2026-06-07 18:53:09 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+# log written 2026-06-08 13:16:44 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
 
  ----- LogisticRegression -----
 train=14770  test=3693  features=48  train positive rate=0.281

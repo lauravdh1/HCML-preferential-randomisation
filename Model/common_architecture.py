@@ -32,7 +32,7 @@ CV_FOLDS = 5
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MODEL_DIR = Path(__file__).resolve().parent
 CLEAN_CSV = str(PROJECT_ROOT / "data" / "h251_clean.csv")
-LOG_DIR = MODEL_DIR
+LOG_DIR = str(MODEL_DIR / "results_log")
 THRESHOLD_OBJECTIVE = "cost"
 COST_FN_FP_RATIO = 2.0
 
