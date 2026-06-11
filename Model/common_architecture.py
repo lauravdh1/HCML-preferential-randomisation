@@ -172,8 +172,9 @@ def choose_threshold(best_pipe, X_train, y_train,
 
 
 # evaluation
-def overall_metrics(y_true, proba, thr, sample_weight=None):
-    pred = (proba >= thr).astype(int)
+def overall_metrics(y_true, proba, thr, sample_weight=None, pred=None):
+    if pred is None:
+        pred = (proba >= thr).astype(int)
     tn, fp, fn, tp = confusion_matrix(y_true, pred).ravel()
     return {
         "threshold": round(thr, 3),
@@ -206,8 +207,9 @@ def consistency(X_encoded, proba, n_neighbors=5):
 
 
 def fairness_report(model, X_test, y_test, proba, thr, race_test,
-                    racethx_test):
-    pred = (proba >= thr).astype(int)
+                    racethx_test, pred=None):
+    if pred is None:
+        pred = (proba >= thr).astype(int)
 
     eod = equalized_odds_difference(y_test, pred,
                                     sensitive_features=race_test)

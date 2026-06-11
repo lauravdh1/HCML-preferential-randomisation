@@ -1,0 +1,229 @@
+# log written 2026-06-11 14:58:21 | seed=2 | threshold_objective=cost (FN:FP=2.0:1) | mitigation=eq_odds
+# log written 2026-06-11 14:58:21 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+
+ ----- LogisticRegression -----
+train=14770  test=3693  features=48  train positive rate=0.281
+[LogisticRegression] best CV ROC-AUC = 0.8126 | params = {'clf__C': 0.1, 'clf__class_weight': None}
+
+chosen threshold = 0.330
+
+-- overall performance --
+threshold          0.330000
+accuracy           0.758462
+balanced_acc       0.728580
+precision          0.560000
+recall_TPR         0.660250
+f1                 0.606007
+roc_auc            0.807212
+pr_auc             0.639714
+brier              0.150804
+FN               353.000000
+FP               539.000000
+TP               686.000000
+TN              2115.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.1807  0.5183  0.1050    0.8260
+NH White (priv)              0.4529  0.7182  0.3036    0.7042
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4531                       1.0000                       0.0000
+NH Black          0.2867                       0.6327                      -0.1664
+NH Other          0.2074                       0.4577                      -0.2457
+NH Asian          0.1545                       0.3410                      -0.2986
+Hispanic          0.1284                       0.2834                      -0.3247
+
+-- fairness summary --
+equalised_odds_diff                0.1999
+disparate_impact_ratio             0.3989
+statistical_parity_diff            0.2722
+individual_fairness_consistency    0.9409
+equalised_odds_diff: lower = fairer (0 = equal TPR & FPR)
+disparate_impact_ratio: 1.0 = parity; < 0.80 fails the 80% rule
+statistical_parity_diff: selection-rate gap vs reference group
+individual_fairness_: closer to 1 = similar people score similarly
+[LogisticRegression] log saved to /Users/mede/HCML-preferential-randomisation/Model/results_log/LogisticRegression.log
+
+ ----- LogisticRegression (calibrated equalised odds) -----
+train=11077  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8133 | params = {'clf__C': 0.1, 'clf__class_weight': None}
+
+chosen threshold = 0.325
+
+-- overall performance --
+threshold          0.325000
+accuracy           0.741944
+balanced_acc       0.564813
+precision          0.674797
+recall_TPR         0.159769
+f1                 0.258366
+roc_auc            0.721155
+pr_auc             0.481782
+brier              0.172518
+FN               873.000000
+FP                80.000000
+TP               166.000000
+TN              2574.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.0900  0.3322  0.0357    0.8485
+NH White (priv)              0.0478  0.0894  0.0244    0.6564
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH Black          0.1468                       3.0676                       0.0989
+NH Other          0.1333                       2.7864                       0.0855
+Hispanic          0.0642                       1.3418                       0.0164
+NH Asian          0.0515                       1.0763                       0.0037
+NH White          0.0479                       1.0000                       0.0000
+
+-- fairness summary --
+equalised_odds_diff                0.2428
+disparate_impact_ratio             0.5313
+statistical_parity_diff            0.0422
+individual_fairness_consistency    0.9046
+SANITY CHECK
+scores range: 0.006832127522828766 0.968593325674994
+label rate: 0.06661251015434606
+                          TPR       FPR
+sensitive_feature_0                    
+0                    0.332226  0.035741
+1                    0.089431  0.024409
+
+========== baseline vs eq_odds ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7585     0.7419 -0.0165
+                   balanced_acc    0.7286     0.5648 -0.1638
+                     recall_TPR    0.6603     0.1598 -0.5005
+                        roc_auc    0.8072     0.7212 -0.0861
+            equalised_odds_diff    0.1999     0.2428  0.0429
+         disparate_impact_ratio    0.3989     0.5313  0.1324
+        statistical_parity_diff    0.2722     0.0422 -0.2301
+individual_fairness_consistency    0.9409     0.9046 -0.0362
+
+Reading the deltas:
+ equalised_odds_diff: lower = fairer (primary metric)
+ disparate_impact_ratio: closer to 1.0 = fairer
+ recall_TPR / accuracy: the cost we pay for fairness
+ individual_fairness: watch for drops
+# log written 2026-06-11 14:58:27 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+
+ ----- GradientBoosting -----
+train=14770  test=3693  features=48  train positive rate=0.281
+[GradientBoosting] best CV ROC-AUC = 0.8203 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+
+chosen threshold = 0.335
+
+-- overall performance --
+threshold          0.335000
+accuracy           0.757379
+balanced_acc       0.733098
+precision          0.556522
+recall_TPR         0.677575
+f1                 0.611111
+roc_auc            0.810261
+pr_auc             0.635145
+brier              0.150517
+FN               335.000000
+FP               561.000000
+TP               704.000000
+TN              2093.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.1855  0.5515  0.1035    0.8333
+NH White (priv)              0.4685  0.7290  0.3219    0.6964
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4688                       1.0000                       0.0000
+NH Black          0.2683                       0.5725                      -0.2004
+NH Other          0.2296                       0.4899                      -0.2391
+NH Asian          0.1631                       0.3479                      -0.3057
+Hispanic          0.1415                       0.3019                      -0.3273
+
+-- fairness summary --
+equalised_odds_diff                0.2184
+disparate_impact_ratio             0.3960
+statistical_parity_diff            0.2830
+individual_fairness_consistency    0.9287
+equalised_odds_diff: lower = fairer (0 = equal TPR & FPR)
+disparate_impact_ratio: 1.0 = parity; < 0.80 fails the 80% rule
+statistical_parity_diff: selection-rate gap vs reference group
+individual_fairness_: closer to 1 = similar people score similarly
+[GradientBoosting] log saved to /Users/mede/HCML-preferential-randomisation/Model/results_log/GradientBoosting.log
+
+ ----- GradientBoosting (calibrated equalised odds) -----
+train=11077  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8227 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+
+chosen threshold = 0.310
+
+-- overall performance --
+threshold          0.310000
+accuracy           0.746818
+balanced_acc       0.578160
+precision          0.675676
+recall_TPR         0.192493
+f1                 0.299625
+roc_auc            0.733203
+pr_auc             0.494852
+brier              0.170534
+FN               839.000000
+FP                96.000000
+TP               200.000000
+TN              2558.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.1089  0.3920  0.0454    0.8516
+NH White (priv)              0.0571  0.1111  0.0267    0.6628
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH Other          0.1630                       2.8525                       0.1058
+NH Black          0.1606                       2.8103                       0.1034
+NH Asian          0.0815                       1.4274                       0.0244
+Hispanic          0.0809                       1.4153                       0.0237
+NH White          0.0571                       1.0000                       0.0000
+
+-- fairness summary --
+equalised_odds_diff                0.2809
+disparate_impact_ratio             0.5244
+statistical_parity_diff            0.0518
+individual_fairness_consistency    0.8964
+SANITY CHECK
+scores range: 0.012099590921506117 0.8998626531671192
+label rate: 0.0801516382344977
+                          TPR       FPR
+sensitive_feature_0                    
+0                    0.392027  0.045421
+1                    0.111111  0.026697
+
+========== baseline vs eq_odds ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7574     0.7468 -0.0106
+                   balanced_acc    0.7331     0.5782 -0.1549
+                     recall_TPR    0.6776     0.1925 -0.4851
+                        roc_auc    0.8103     0.7332 -0.0771
+            equalised_odds_diff    0.2184     0.2809  0.0625
+         disparate_impact_ratio    0.3960     0.5244  0.1285
+        statistical_parity_diff    0.2830     0.0518 -0.2312
+individual_fairness_consistency    0.9287     0.8964 -0.0323
+
+Reading the deltas:
+ equalised_odds_diff: lower = fairer (primary metric)
+ disparate_impact_ratio: closer to 1.0 = fairer
+ recall_TPR / accuracy: the cost we pay for fairness
+ individual_fairness: watch for drops
