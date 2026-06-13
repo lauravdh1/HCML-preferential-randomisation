@@ -14,6 +14,7 @@ from aif360.algorithms.postprocessing import CalibratedEqOddsPostprocessing
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import common_architecture as ca
+import pref_rand as pr
 from common_architecture import (
     SEED, LOG_DIR, THRESHOLD_OBJECTIVE, COST_FN_FP_RATIO, load_clean_split,
     tune_and_fit, choose_threshold, overall_metrics, fairness_report, _tee_stdout
@@ -263,6 +264,84 @@ def evaluate_cal_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
     }
 
 
+# preferential randomisation
+def evaluate_pref_rand(name: str, pipe: ca.Pipeline, grid: dict, curve: str = "cubic",
+                       max_lipschitz: float = 5.0, csv_path: str = ca.CLEAN_CSV) -> dict:
+    """Evaluate the preferential randomisation (Small et al., 2024) using the
+    updated version of the paper's implementation.
+
+    :param name: name of the model.
+    :param pipe: pipeline employed for the post-processing.
+    :param curve: what type of ROC curve to analyse.
+    :max_lipschitz: constant of the curve (similar to the paper's interpretation).
+    :csv_path: path to the cleaned data.
+    :return: dictionary containing all results of the post-processing.
+    """
+    (X_train, X_test, y_train, y_test, race_train, race_test,
+     racethx_train, racethx_test, w_train, w_test) = load_clean_split(csv_path)
+
+    X_tr, X_val, y_tr, y_val, race_tr, race_val = train_test_split(
+        X_train, y_train, race_train, test_size=0.25,
+        random_state=SEED, stratify=y_train)
+
+    best, _ = tune_and_fit(pipe, grid, X_tr, y_tr)
+    thr = choose_threshold(best, X_tr, y_tr)
+    proba_val = best.predict_proba(X_val)[:, 1]
+    proba_test = best.predict_proba(X_test)[:, 1]
+
+    fp_con, tp_con = pr.find_eo_target(proba_val, y_val, race_val)
+
+    group_params = {}
+    for g in (0, 1):
+        m = (np.asarray(race_val) == g)
+        (t0, t1, p, _, _), obj, fell_back = pr.fit_group_params(
+            proba_val[m], np.asarray(y_val)[m], fp_con, tp_con,
+            curve=curve, grid=21, seed=SEED, max_lipschitz=max_lipschitz)
+        group_params[g] = (t0, t1, p)
+        print(f"group {g}: t0={t0:.3f} t1={t1:.3f} p={p:.3f} "
+              f"obj={obj:.4f} L_R={pr.lipschitz_constant(t0, t1, p, curve):.3f}"
+              + ("  [fell back]" if fell_back else ""))
+
+    pred_corrected = pr.apply_pref_rand(proba_test, race_test, group_params,
+                                        curve=curve, seed=SEED)
+
+    overall = overall_metrics(y_test, proba_test, thr, pred=pred_corrected)
+    fair, binary_df, racethx_df = fairness_report(
+        best, X_test, y_test, proba_test, thr, race_test, racethx_test,
+        pred=pred_corrected
+    )
+    pd.set_option("display.width", 160)
+    print(f"\nchosen threshold = {thr:.3f}")
+    print("\n-- overall performance --")
+    print(pd.Series(overall).to_string())
+    print("\n-- per-group (binary race) --")
+    print(binary_df.round(4).to_string())
+    print("\n-- per-group (RACETHX, descriptive) --")
+    print(racethx_df.round(4).to_string())
+    print("\n-- fairness summary --")
+    print(pd.Series(fair).round(4).to_string())
+
+    # per group TPR / FPR to show which error rate the constraint actually equalised
+    tpr_priv = float(binary_df.loc["NH White (priv)", "TPR"])
+    tpr_unpriv = float(binary_df.loc["Non-White", "TPR"])
+    fpr_priv = float(binary_df.loc["NH White (priv)", "FPR"])
+    fpr_unpriv = float(binary_df.loc["Non-White", "FPR"])
+    tpr_gap = abs(tpr_priv - tpr_unpriv)
+    fpr_gap = abs(fpr_priv - fpr_unpriv)
+
+    return {
+        "name": name, "model": best, "threshold": thr, "proba": proba_test,
+        "overall": overall, "fairness": fair,
+        "binary_by_group": binary_df, "racethx_by_group": racethx_df,
+        "tpr_gap": tpr_gap, "fpr_gap": fpr_gap,
+        "tpr_priv": tpr_priv, "tpr_unpriv": tpr_unpriv,
+        "fpr_priv": fpr_priv, "fpr_unpriv": fpr_unpriv,
+        "splits": dict(X_train=X_train, X_test=X_test, y_train=y_train,
+                       y_test=y_test, race_train=race_train,
+                       race_test=race_test, w_train=w_train, w_test=w_test),
+    }
+
+
 def evaluate_baseline(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path = ca.CLEAN_CSV) -> dict:
     """Unmitigated run for comparison reasons."""
     return ca.evaluate_model(name, pipe, grid, csv_path)
@@ -406,7 +485,7 @@ def main(method: str):
             elif method == "eq_odds":
                 mitigated = evaluate_cal_eqodds(name, pipe, grid)
             elif method == "pref_rand":
-                raise NotImplementedError("Preferential randomisation not yet implemented.")
+                mitigated = evaluate_pref_rand(name, pipe, grid)
             else:
                 raise ValueError(f"Unknown method: {method} Choose from: reweighing, eq_odds, pref_rand")
 

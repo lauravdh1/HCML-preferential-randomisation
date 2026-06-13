@@ -1,46 +1,46 @@
-# log written 2026-06-11 16:42:52 | seed=4 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+# log written 2026-06-13 13:18:51 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
 
  ----- GradientBoosting -----
 train=14770  test=3693  features=48  train positive rate=0.281
-[GradientBoosting] best CV ROC-AUC = 0.8153 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.1, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+[GradientBoosting] best CV ROC-AUC = 0.8203 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
 
-chosen threshold = 0.340
+chosen threshold = 0.335
 
 -- overall performance --
-threshold          0.340000
-accuracy           0.769022
-balanced_acc       0.740027
-precision          0.576606
-recall_TPR         0.673725
-f1                 0.621394
-roc_auc            0.828306
-pr_auc             0.664844
-brier              0.143761
-FN               339.000000
-FP               514.000000
-TP               700.000000
-TN              2140.000000
+threshold          0.335000
+accuracy           0.757379
+balanced_acc       0.733098
+precision          0.556522
+recall_TPR         0.677575
+f1                 0.611111
+roc_auc            0.810261
+pr_auc             0.635145
+brier              0.150517
+FN               335.000000
+FP               561.000000
+TP               704.000000
+TN              2093.000000
 
 -- per-group (binary race) --
                      selection_rate     TPR     FPR  accuracy
 sensitive_feature_0                                          
-Non-White                    0.1979  0.5898  0.1149    0.8335
-NH White (priv)              0.4389  0.7070  0.2807    0.7147
+Non-White                    0.1855  0.5515  0.1035    0.8333
+NH White (priv)              0.4685  0.7290  0.3219    0.6964
 
 -- per-group (RACETHX, descriptive) --
           selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
 racethx                                                                           
-NH White          0.4391                       1.0000                       0.0000
-NH Black          0.2927                       0.6666                      -0.1464
-NH Other          0.2429                       0.5531                      -0.1963
-NH Asian          0.1781                       0.4057                      -0.2610
-Hispanic          0.1349                       0.3073                      -0.3042
+NH White          0.4688                       1.0000                       0.0000
+NH Black          0.2683                       0.5725                      -0.2004
+NH Other          0.2296                       0.4899                      -0.2391
+NH Asian          0.1631                       0.3479                      -0.3057
+Hispanic          0.1415                       0.3019                      -0.3273
 
 -- fairness summary --
-equalised_odds_diff                0.1659
-disparate_impact_ratio             0.4508
-statistical_parity_diff            0.2410
-individual_fairness_consistency    0.9315
+equalised_odds_diff                0.2184
+disparate_impact_ratio             0.3960
+statistical_parity_diff            0.2830
+individual_fairness_consistency    0.9287
 equalised_odds_diff: lower = fairer (0 = equal TPR & FPR)
 disparate_impact_ratio: 1.0 = parity; < 0.80 fails the 80% rule
 statistical_parity_diff: selection-rate gap vs reference group
