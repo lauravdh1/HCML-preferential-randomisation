@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
 from aif360.datasets import BinaryLabelDataset
-from aif360.algorithms.postprocessing import CalibratedEqOddsPostprocessing
+from aif360.algorithms.postprocessing import CalibratedEqOddsPostprocessing, EqOddsPostprocessing
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -160,16 +160,22 @@ def make_aif360_dataset(X: pd.DataFrame, y: pd.Series, race: pd.Series, proba: n
     )
 
 
-# equalised odds method
-def evaluate_cal_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
-                        cost_constraint: str = "fnr",
-                        csv_path: Path = ca.CLEAN_CSV) -> dict:
-    """Evaluate post-processing calibrated equalised odds on the given trained model.
+# calibrated equalised odds + plain equalised odds method
+def _run_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
+                method: str,
+                cost_constraint: str = "fnr",
+                csv_path: Path = ca.CLEAN_CSV) -> dict:
+    """Evaluate post-processing equalised odds on the given trained model.
+
+    Shared function for both calibrated equalised odds and 
+    plain equalised odds (Hardt et al.).
 
     :param name: the name for the model to be trained.
     :param pipe: pipeline to be evaluated.
     :param grid: the hyperparameter grid for tuning.
-    :param cost_constraint: which generalised cost AIF360 equalises across groups.
+    :param method: "calibrated" or "plain": which equalised odds method to use.
+    :param cost_constraint: which generalised cost AIF360 equalises across groups
+        (only applies to calibrated eqodds).
     :param csv_path: path to the cleaned file.
     :return: dictionary containing the overall metrics for the evaluated method.
     """
@@ -182,7 +188,10 @@ def evaluate_cal_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
         X_train, y_train, race_train, test_size=0.25, random_state=SEED, stratify=y_train
     )
 
-    print(f"\n ----- {name} (calibrated equalised odds | cost constraint={cost_constraint}) -----")
+    if method == "calibrated":
+        print(f"\n ----- {name} (calibrated equalised odds | cost constraint={cost_constraint}) -----")
+    else:
+        print(f"\n ----- {name} (plain equalised odds | Hardt et al.) -----")
     print(f"train={len(X_tr)}  test={len(X_test)}  "
           f"features={X_tr.shape[1]}  "
           f"train positive rate={y_tr.mean():.3f}")
@@ -203,22 +212,37 @@ def evaluate_cal_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
         (proba_val >= thr).astype(int), index=y_val.index
     )
     val_pred = make_aif360_dataset(X_val, y_val_pred, race_val, proba_val)
-    test_pred_input = make_aif360_dataset(X_test, y_test, race_test, proba_test)
+    # Convert model's probabilities to yes/no predictions, otherwise 
+    # plain equalized odds uses true labels
+    y_test_pred = pd.Series(
+        (proba_test >= thr).astype(int), index=y_test.index
+    )
+    test_pred_input = make_aif360_dataset(X_test, y_test_pred, race_test, proba_test)
 
     # fit the post-processor on validation
-    cpp = CalibratedEqOddsPostprocessing(
-        privileged_groups=[{"RACE_BINARY": 1}],
-        unprivileged_groups=[{"RACE_BINARY": 0}],
-        cost_constraint=cost_constraint,
-        seed=SEED
-    )
+    if method == "calibrated":
+        pp = CalibratedEqOddsPostprocessing(
+            privileged_groups=[{"RACE_BINARY": 1}],
+            unprivileged_groups=[{"RACE_BINARY": 0}],
+            cost_constraint=cost_constraint,
+            seed=SEED
+        )
+    else:  # plain equalised odds matches both TPR and FPR
+        pp = EqOddsPostprocessing(
+            privileged_groups=[{"RACE_BINARY": 1}],
+            unprivileged_groups=[{"RACE_BINARY": 0}],
+            seed=SEED
+        )
     # what is the predicted dataset?
-    cpp.fit(val_true, val_pred)
-    test_pred = cpp.predict(test_pred_input)
+    pp.fit(val_true, val_pred)
+    test_pred = pp.predict(test_pred_input)
 
     # extract corrected predictions
     pred_corrected = test_pred.labels.flatten().astype(int)
-    proba_corrected = test_pred.scores.flatten()
+    if method == "calibrated":
+        proba_corrected = test_pred.scores.flatten()
+    else:
+        proba_corrected = proba_test
 
     # evaluation
     overall = overall_metrics(y_test, proba_corrected, thr, pred=pred_corrected)
@@ -250,9 +274,15 @@ def evaluate_cal_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
     tpr_gap = abs(tpr_priv - tpr_unpriv)
     fpr_gap = abs(fpr_priv - fpr_unpriv)
 
+    # cost_constraint only applies to calibrated equalized odds
+    if method == "calibrated":
+        used_cost_constraint = cost_constraint
+    else:
+        used_cost_constraint = None
+
     return {
         "name": name, "model": best, "threshold": thr, "proba": proba_corrected,
-        "cost_constraint": cost_constraint,
+        "cost_constraint": used_cost_constraint,
         "overall": overall, "fairness": fair,
         "binary_by_group": binary_df, "racethx_by_group": racethx_df,
         "tpr_gap": tpr_gap, "fpr_gap": fpr_gap,
@@ -262,6 +292,22 @@ def evaluate_cal_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
                        y_test=y_test, race_train=race_train,
                        race_test=race_test, w_train=w_train, w_test=w_test),
     }
+
+
+# calibrated equalised odds
+def evaluate_cal_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
+                        cost_constraint: str = "fnr",
+                        csv_path: Path = ca.CLEAN_CSV) -> dict:
+    """Evaluate calibrated equalised odds post-processing."""
+    return _run_eqodds(name, pipe, grid, method="calibrated",
+                       cost_constraint=cost_constraint, csv_path=csv_path)
+
+
+# plain equalised odds (Hardt et al.)
+def evaluate_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
+                    csv_path: Path = ca.CLEAN_CSV) -> dict:
+    """Evaluate plain equalised odds post-processing (Hardt et al.)."""
+    return _run_eqodds(name, pipe, grid, method="plain", csv_path=csv_path)
 
 
 # preferential randomisation
@@ -482,12 +528,14 @@ def main(method: str):
 
             if method == "reweighing":
                 mitigated = evaluate_reweighing(name, pipe, grid)
-            elif method == "eq_odds":
+            elif method == "eq_odds_calibrated":
                 mitigated = evaluate_cal_eqodds(name, pipe, grid)
+            elif method == "eq_odds_plain":
+                mitigated = evaluate_eqodds(name, pipe, grid)
             elif method == "pref_rand":
                 mitigated = evaluate_pref_rand(name, pipe, grid)
             else:
-                raise ValueError(f"Unknown method: {method} Choose from: reweighing, eq_odds, pref_rand")
+                raise ValueError(f"Unknown method: {method} Choose from: reweighing, eq_odds_calibrated, eq_odds_plain, pref_rand")
 
             print(f"\n========== baseline vs {method} ==========")
             print(_delta_table(baseline, mitigated).to_string(index=False))
@@ -512,7 +560,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--method", type=str, required=True,
-        help="Possible options are: reweighing, eq_odds, eq_odds_sweep, pref_rand"
+        help="Possible options are: reweighing, eq_odds_calibrated, eq_odds_plain, eq_odds_sweep, pref_rand"
     )
     args = parser.parse_args()
 
