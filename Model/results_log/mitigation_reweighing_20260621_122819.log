@@ -1,4 +1,5 @@
-# log written 2026-06-21 12:37:55 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+# log written 2026-06-21 12:28:19 | seed=2 | threshold_objective=cost (FN:FP=2.0:1) | mitigation=reweighing
+# log written 2026-06-21 12:28:19 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
 
  ----- LogisticRegression -----
 train=14770  test=3693  features=48  train positive rate=0.281
@@ -45,3 +46,4 @@ equalised_odds_diff: lower = fairer (0 = equal TPR & FPR)
 disparate_impact_ratio: 1.0 = parity; < 0.80 fails the 80% rule
 statistical_parity_diff: selection-rate gap vs reference group
 individual_fairness_: closer to 1 = similar people score similarly
+[LogisticRegression] log saved to C:\Users\diana\OneDrive\Desktop\Courses_UU\Period4_2025-2026\HCML\FinalProject\HCML-preferential-randomisation\Model\results_log\LogisticRegression.log

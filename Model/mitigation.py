@@ -21,6 +21,7 @@ from common_architecture import (
 )
 from logistic_regression import build_logreg
 from gradient_boosting import build_gbm
+from shap_analysis import ShapAnalysis
 
 
 def compute_reweighing_weights(y_train: pd.Series, race_train: pd.Series) -> np.ndarray:
@@ -97,6 +98,14 @@ def evaluate_reweighing(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path
     best, _ = tune_and_fit(pipe, grid, X_train, y_train)
     best_params = best.get_params()
 
+    # ------
+    # shap before reweighing
+    shap_method_bf = ShapAnalysis(best, X_train, name, f"{name} | before reweighing")
+    shap_method_bf.compute(X_test)
+    shap_method_bf.summary()
+    shap_method_bf.race_proxy(race_test)
+    # ------
+
     # compute reweighing weights
     rw = compute_reweighing_weights(y_train, race_train)
     print("\n-- reweighing weights (per group x label cell) --")
@@ -106,6 +115,18 @@ def evaluate_reweighing(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path
     rw_pipe = clone(pipe)
     rw_pipe.set_params(**{k: v for k, v in best_params.items() if k in pipe.get_params()})
     rw_pipe.fit(X_train, y_train, clf__sample_weight=rw)
+
+    # ------
+    # shap after reweighing
+    shap_method_af = ShapAnalysis(rw_pipe, X_train, name, f"{name} | reweighing")
+    shap_method_af.compute(X_test)
+    shap_method_af.summary()
+    shap_method_af.race_proxy(race_test)
+  
+    print(f"\n====shap importance shift (top 10) - before vs after reweighing | {name} ====")
+    delta = (shap_method_af.mean_abs - shap_method_bf.mean_abs).abs().sort_values(ascending=False)
+    print(delta.head(10).round(5).to_string())
+    # ------
 
     # threshold via the same rule as baseline
     thr = choose_threshold(rw_pipe, X_train, y_train)
@@ -133,6 +154,7 @@ def evaluate_reweighing(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path
         "overall": overall, "fairness": fair,
         "binary_by_group": binary_df, "racethx_by_group": racethx_df,
         "reweighing_weights": rw,
+        "shap_before": shap_method_bf, "shap_after": shap_method_af,
         "splits": dict(X_train=X_train, X_test=X_test, y_train=y_train,
                        y_test=y_test, race_train=race_train,
                        race_test=race_test, w_train=w_train, w_test=w_test),
@@ -280,6 +302,15 @@ def _run_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
     else:
         used_cost_constraint = None
 
+    # ------
+    # shap post process eqodds
+    tag = "cal_eqodds" if method == "calibrated" else "eq_odds_plain"
+    shap_method = ShapAnalysis(best, X_tr, name, f"{name} | {tag}")
+    shap_method.compute(X_test)
+    shap_method.summary()
+    shap_method.race_proxy(race_test)
+    # ------
+
     return {
         "name": name, "model": best, "threshold": thr, "proba": proba_corrected,
         "cost_constraint": used_cost_constraint,
@@ -288,6 +319,7 @@ def _run_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
         "tpr_gap": tpr_gap, "fpr_gap": fpr_gap,
         "tpr_priv": tpr_priv, "tpr_unpriv": tpr_unpriv,
         "fpr_priv": fpr_priv, "fpr_unpriv": fpr_unpriv,
+        "shap": shap_method,
         "splits": dict(X_train=X_train, X_test=X_test, y_train=y_train,
                        y_test=y_test, race_train=race_train,
                        race_test=race_test, w_train=w_train, w_test=w_test),
@@ -375,6 +407,14 @@ def evaluate_pref_rand(name: str, pipe: ca.Pipeline, grid: dict, curve: str = "c
     tpr_gap = abs(tpr_priv - tpr_unpriv)
     fpr_gap = abs(fpr_priv - fpr_unpriv)
 
+    # ------
+    # shap post processing pref rand
+    shap_method = ShapAnalysis(best, X_tr, name, f"{name} | pref_rand")
+    shap_method.compute(X_test)
+    shap_method.summary()
+    shap_method.race_proxy(race_test)
+    # ------
+
     return {
         "name": name, "model": best, "threshold": thr, "proba": proba_test,
         "overall": overall, "fairness": fair,
@@ -382,6 +422,7 @@ def evaluate_pref_rand(name: str, pipe: ca.Pipeline, grid: dict, curve: str = "c
         "tpr_gap": tpr_gap, "fpr_gap": fpr_gap,
         "tpr_priv": tpr_priv, "tpr_unpriv": tpr_unpriv,
         "fpr_priv": fpr_priv, "fpr_unpriv": fpr_unpriv,
+        "shap": shap_method,
         "splits": dict(X_train=X_train, X_test=X_test, y_train=y_train,
                        y_test=y_test, race_train=race_train,
                        race_test=race_test, w_train=w_train, w_test=w_test),
@@ -390,7 +431,18 @@ def evaluate_pref_rand(name: str, pipe: ca.Pipeline, grid: dict, curve: str = "c
 
 def evaluate_baseline(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path = ca.CLEAN_CSV) -> dict:
     """Unmitigated run for comparison reasons."""
-    return ca.evaluate_model(name, pipe, grid, csv_path)
+    baseline_eval = ca.evaluate_model(name, pipe, grid, csv_path)
+
+    # ------
+    # shap baseline
+    shap_method = ShapAnalysis(baseline_eval["model"], baseline_eval["splits"]["X_train"], name, f"{name} | baseline")
+
+    shap_method.compute(baseline_eval["splits"]["X_test"])
+    shap_method.summary()
+    shap_method.race_proxy(baseline_eval["splits"]["race_test"])
+    # ------
+
+    return baseline_eval
 
 
 def _delta_table(baseline, mitigated) -> pd.DataFrame:
@@ -544,6 +596,20 @@ def main(method: str):
             print(" disparate_impact_ratio: closer to 1.0 = fairer")
             print(" recall_TPR / accuracy: the cost we pay for fairness")
             print(" individual_fairness: watch for drops")
+
+            # ------
+            # shap
+            if method == "reweighing":
+                print(f"\n==========shap importance shift (top 10): before vs after | {name}==========")
+                delta = (mitigated["shap_after"].mean_abs - mitigated["shap_before"].mean_abs).abs().sort_values(ascending=False)
+                print(delta.head(10).round(5).to_string())
+            else:
+                if "shap" in baseline and "shap" in mitigted:
+                    delta = (mitigated["shap"].mean_abs - baseline["shap"].mean_abs).abs().sort_values(ascenfing=False)
+                    print(f"\n==========shap difference vs baseline (top 10): | {name}==========")
+                    print(delta.head(10).round(5).to_string())
+            # ------
+
             results[name] = {"baseline": baseline, "mitigated": mitigated}
         return results
 
