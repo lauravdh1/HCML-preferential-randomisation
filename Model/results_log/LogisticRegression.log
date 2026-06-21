@@ -1,4 +1,4 @@
-# log written 2026-06-21 12:37:55 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+# log written 2026-06-21 17:25:34 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
 
  ----- LogisticRegression -----
 train=14770  test=3693  features=48  train positive rate=0.281
@@ -13,8 +13,8 @@ balanced_acc       0.728580
 precision          0.560000
 recall_TPR         0.660250
 f1                 0.606007
-roc_auc            0.807209
-pr_auc             0.639715
+roc_auc            0.807211
+pr_auc             0.639714
 brier              0.150804
 FN               353.000000
 FP               539.000000

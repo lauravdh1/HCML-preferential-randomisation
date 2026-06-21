@@ -1,0 +1,910 @@
+# log written 2026-06-21 17:25:34 | seed=2 | threshold_objective=cost (FN:FP=2.0:1) | mitigation=all
+# log written 2026-06-21 17:25:34 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+
+ ----- LogisticRegression -----
+train=14770  test=3693  features=48  train positive rate=0.281
+[LogisticRegression] best CV ROC-AUC = 0.8126 | params = {'clf__C': 0.1, 'clf__class_weight': None}
+
+chosen threshold = 0.330
+
+-- overall performance --
+threshold          0.330000
+accuracy           0.758462
+balanced_acc       0.728580
+precision          0.560000
+recall_TPR         0.660250
+f1                 0.606007
+roc_auc            0.807211
+pr_auc             0.639714
+brier              0.150804
+FN               353.000000
+FP               539.000000
+TP               686.000000
+TN              2115.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.1807  0.5183  0.1050    0.8260
+NH White (priv)              0.4529  0.7182  0.3036    0.7042
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4531                       1.0000                       0.0000
+NH Black          0.2867                       0.6327                      -0.1664
+NH Other          0.2074                       0.4577                      -0.2457
+NH Asian          0.1545                       0.3410                      -0.2986
+Hispanic          0.1284                       0.2834                      -0.3247
+
+-- fairness summary --
+equalised_odds_diff                0.1999
+disparate_impact_ratio             0.3989
+statistical_parity_diff            0.2722
+individual_fairness_consistency    0.9409
+equalised_odds_diff: lower = fairer (0 = equal TPR & FPR)
+disparate_impact_ratio: 1.0 = parity; < 0.80 fails the 80% rule
+statistical_parity_diff: selection-rate gap vs reference group
+individual_fairness_: closer to 1 = similar people score similarly
+[LogisticRegression] log saved to /Users/jananjahed/Desktop/HML/HCML-preferential-randomisation/Model/results_log/LogisticRegression.log
+
+-- SHAP top-10 features | LogisticRegression | baseline before --
+COMORBIDITY     0.27094
+SEX_1.0         0.18213
+TYPEPE42_2.0    0.17336
+REGION23_3.0    0.16917
+HAVEUS42_2.0    0.12006
+JTPAIN31_M18    0.11992
+RTHLTH53        0.11913
+EDUCYR          0.11675
+ARTHDX          0.11591
+MNHLTH53        0.11313
+
+=== shap race-proxy features (top 10) | LogisticRegression | baseline before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38476
+AGE23X            0.21819
+POVLEV23          0.21412
+POVCAT23_5.0      0.20818
+EDUCYR            0.20346
+HIDEG_1.0         0.19814
+AGE_x_COMORBID    0.19353
+ACTDTY53_4.0      0.19097
+INSCOV23_1.0      0.18744
+CANCERDX          0.18532
+saved shap_beeswarm_LogisticRegression___baseline_before.png, shap_bar_LogisticRegression___baseline_before.png
+
+ ----- LogisticRegression (reweighing) -----
+train=14770  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8126 | params = {'clf__C': 0.1, 'clf__class_weight': None}
+
+-- reweighing weights (per group x label cell) --
+          group     label    n  weight
+NH White (priv) high util 3011  0.7540
+NH White (priv)  low util 5055  1.1466
+      Non-White high util 1146  1.6465
+      Non-White  low util 5558  0.8667
+
+-- SHAP top-10 features | LogisticRegression | reweighing before --
+COMORBIDITY     0.27094
+SEX_1.0         0.18213
+TYPEPE42_2.0    0.17336
+REGION23_3.0    0.16917
+HAVEUS42_2.0    0.12006
+JTPAIN31_M18    0.11992
+RTHLTH53        0.11913
+EDUCYR          0.11675
+ARTHDX          0.11591
+MNHLTH53        0.11313
+
+=== shap race-proxy features (top 10) | LogisticRegression | reweighing before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38476
+AGE23X            0.21819
+POVLEV23          0.21412
+POVCAT23_5.0      0.20818
+EDUCYR            0.20346
+HIDEG_1.0         0.19814
+AGE_x_COMORBID    0.19353
+ACTDTY53_4.0      0.19097
+INSCOV23_1.0      0.18744
+CANCERDX          0.18532
+saved shap_beeswarm_LogisticRegression___reweighing_before.png, shap_bar_LogisticRegression___reweighing_before.png
+
+-- SHAP top-10 features | LogisticRegression | reweighing after --
+COMORBIDITY     0.24820
+SEX_1.0         0.16627
+RTHLTH53        0.13733
+TYPEPE42_2.0    0.12682
+JTPAIN31_M18    0.12265
+REGION23_3.0    0.11942
+EDUCYR          0.11735
+ARTHDX          0.11342
+HAVEUS42_2.0    0.11308
+MNHLTH53        0.10657
+
+=== shap race-proxy features (top 10) | LogisticRegression | reweighing after ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38476
+AGE23X            0.21819
+POVLEV23          0.21412
+POVCAT23_5.0      0.20818
+EDUCYR            0.20346
+HIDEG_1.0         0.19814
+AGE_x_COMORBID    0.19353
+ACTDTY53_4.0      0.19097
+INSCOV23_1.0      0.18744
+CANCERDX          0.18532
+saved shap_beeswarm_LogisticRegression___reweighing_after.png, shap_bar_LogisticRegression___reweighing_after.png
+
+==== SHAP importance shift (top 10) before vs after reweighing | LogisticRegression ====
+BORNUSA         0.07200
+REGION23_3.0    0.04975
+TYPEPE42_2.0    0.04654
+INSCOV23_2.0    0.03778
+HIBPDX          0.03349
+AGE23X          0.03237
+POVCAT23_5.0    0.03197
+MARRY23X_1.0    0.02851
+REGION23_2.0    0.02610
+SEX_2.0         0.02322
+saved shap_before_after_LogisticRegression_reweighing.png
+
+chosen threshold = 0.330
+
+-- overall performance --
+threshold          0.330000
+accuracy           0.761982
+balanced_acc       0.726051
+precision          0.567912
+recall_TPR         0.643888
+f1                 0.603518
+roc_auc            0.803748
+pr_auc             0.633770
+brier              0.152092
+FN               370.000000
+FP               509.000000
+TP               669.000000
+TN              2145.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.2135  0.5847  0.1303    0.8175
+NH White (priv)              0.4036  0.6680  0.2548    0.7174
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4038                       1.0000                       0.0000
+NH Black          0.3005                       0.7441                      -0.1033
+NH Asian          0.2532                       0.6271                      -0.1506
+NH Other          0.1852                       0.4586                      -0.2186
+Hispanic          0.1617                       0.4005                      -0.2421
+
+-- fairness summary --
+equalised_odds_diff                0.1245
+disparate_impact_ratio             0.5290
+statistical_parity_diff            0.1901
+individual_fairness_consistency    0.9428
+
+ ----- LogisticRegression (calibrated equalised odds | cost constraint=fnr) -----
+train=11077  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8133 | params = {'clf__C': 0.1, 'clf__class_weight': None}
+
+chosen threshold = 0.325
+
+-- overall performance --
+threshold          0.325000
+accuracy           0.741944
+balanced_acc       0.564813
+precision          0.674797
+recall_TPR         0.159769
+f1                 0.258366
+roc_auc            0.721155
+pr_auc             0.481781
+brier              0.172518
+FN               873.000000
+FP                80.000000
+TP               166.000000
+TN              2574.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.0900  0.3322  0.0357    0.8485
+NH White (priv)              0.0478  0.0894  0.0244    0.6564
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH Black          0.1468                       3.0676                       0.0989
+NH Other          0.1333                       2.7864                       0.0855
+Hispanic          0.0642                       1.3418                       0.0164
+NH Asian          0.0515                       1.0763                       0.0037
+NH White          0.0479                       1.0000                       0.0000
+
+-- fairness summary --
+equalised_odds_diff                0.2428
+disparate_impact_ratio             0.5313
+statistical_parity_diff            0.0422
+individual_fairness_consistency    0.9046
+SANITY CHECK
+scores range: 0.006831290916541053 0.968593877359438
+label rate: 0.06661251015434606
+
+-- SHAP top-10 features | LogisticRegression | cal_eqodds before --
+COMORBIDITY     0.25765
+SEX_1.0         0.18526
+TYPEPE42_2.0    0.17398
+REGION23_3.0    0.16672
+ARTHDX          0.12757
+EDUCYR          0.12339
+BORNUSA         0.12011
+HAVEUS42_2.0    0.12009
+AGE23X          0.11918
+JTPAIN31_M18    0.11449
+
+=== shap race-proxy features (top 10) | LogisticRegression | cal_eqodds before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38476
+AGE23X            0.21819
+POVLEV23          0.21412
+POVCAT23_5.0      0.20818
+EDUCYR            0.20346
+HIDEG_1.0         0.19814
+AGE_x_COMORBID    0.19353
+ACTDTY53_4.0      0.19097
+INSCOV23_1.0      0.18744
+CANCERDX          0.18532
+saved shap_beeswarm_LogisticRegression___cal_eqodds_before.png, shap_bar_LogisticRegression___cal_eqodds_before.png
+
+[note] 'cal_eqodds' is post-processing: the model is unchanged, so SHAP attributions are identical before and after.
+
+ ----- LogisticRegression (plain equalised odds | Hardt et al.) -----
+train=11077  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8133 | params = {'clf__C': 0.1, 'clf__class_weight': None}
+
+chosen threshold = 0.325
+
+-- overall performance --
+threshold          0.325000
+accuracy           0.706201
+balanced_acc       0.681971
+precision          0.482938
+recall_TPR         0.626564
+f1                 0.545455
+roc_auc            0.807088
+pr_auc             0.641123
+brier              0.150679
+FN               388.000000
+FP               697.000000
+TP               651.000000
+TN              1957.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.3248  0.6279  0.2569    0.7220
+NH White (priv)              0.3973  0.6260  0.2685    0.6935
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH Black          0.4381                       1.1022                       0.0406
+NH White          0.3975                       1.0000                       0.0000
+NH Other          0.3481                       0.8759                      -0.0493
+Hispanic          0.2806                       0.7060                      -0.1168
+NH Asian          0.2575                       0.6479                      -0.1400
+
+-- fairness summary --
+equalised_odds_diff                0.0116
+disparate_impact_ratio             0.8176
+statistical_parity_diff            0.0724
+individual_fairness_consistency    0.9402
+SANITY CHECK
+scores range: 0.006831290916541053 0.9913264293676854
+label rate: 0.3650148930408882
+
+-- SHAP top-10 features | LogisticRegression | eq_odds_plain before --
+COMORBIDITY     0.25765
+SEX_1.0         0.18526
+TYPEPE42_2.0    0.17398
+REGION23_3.0    0.16672
+ARTHDX          0.12757
+EDUCYR          0.12339
+BORNUSA         0.12011
+HAVEUS42_2.0    0.12009
+AGE23X          0.11918
+JTPAIN31_M18    0.11449
+
+=== shap race-proxy features (top 10) | LogisticRegression | eq_odds_plain before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38476
+AGE23X            0.21819
+POVLEV23          0.21412
+POVCAT23_5.0      0.20818
+EDUCYR            0.20346
+HIDEG_1.0         0.19814
+AGE_x_COMORBID    0.19353
+ACTDTY53_4.0      0.19097
+INSCOV23_1.0      0.18744
+CANCERDX          0.18532
+saved shap_beeswarm_LogisticRegression___eq_odds_plain_before.png, shap_bar_LogisticRegression___eq_odds_plain_before.png
+
+[note] 'eq_odds_plain' is post-processing: the model is unchanged, so SHAP attributions are identical before and after.
+[] best CV ROC-AUC = 0.8133 | params = {'clf__C': 0.1, 'clf__class_weight': None}
+group 0: t0=0.019 t1=0.773 p=0.680 obj=0.0075 L_R=4.228
+group 1: t0=0.170 t1=0.510 p=0.500 obj=0.0171 L_R=4.408
+
+chosen threshold = 0.325
+
+-- overall performance --
+threshold          0.325000
+accuracy           0.683726
+balanced_acc       0.682440
+precision          0.458144
+recall_TPR         0.679500
+f1                 0.547287
+roc_auc            0.807088
+pr_auc             0.641123
+brier              0.150679
+FN               333.000000
+FP               835.000000
+TP               706.000000
+TN              1819.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.3911  0.6811  0.3261    0.6752
+NH White (priv)              0.4383  0.6789  0.3028    0.6906
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH Asian          0.4592                       1.0473                       0.0208
+NH Other          0.4519                       1.0305                       0.0134
+NH Black          0.4472                       1.0200                       0.0088
+NH White          0.4385                       1.0000                       0.0000
+Hispanic          0.3329                       0.7593                      -0.1055
+
+-- fairness summary --
+equalised_odds_diff                0.0233
+disparate_impact_ratio             0.8924
+statistical_parity_diff            0.0471
+individual_fairness_consistency    0.9402
+
+-- SHAP top-10 features | LogisticRegression | pref_rand before --
+COMORBIDITY     0.25765
+SEX_1.0         0.18526
+TYPEPE42_2.0    0.17398
+REGION23_3.0    0.16672
+ARTHDX          0.12757
+EDUCYR          0.12339
+BORNUSA         0.12011
+HAVEUS42_2.0    0.12009
+AGE23X          0.11918
+JTPAIN31_M18    0.11449
+
+=== shap race-proxy features (top 10) | LogisticRegression | pref_rand before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38476
+AGE23X            0.21819
+POVLEV23          0.21412
+POVCAT23_5.0      0.20818
+EDUCYR            0.20346
+HIDEG_1.0         0.19814
+AGE_x_COMORBID    0.19353
+ACTDTY53_4.0      0.19097
+INSCOV23_1.0      0.18744
+CANCERDX          0.18532
+saved shap_beeswarm_LogisticRegression___pref_rand_before.png, shap_bar_LogisticRegression___pref_rand_before.png
+
+[note] 'pref_rand' is post-processing: the model is unchanged, so SHAP attributions are identical before and after.
+
+========== LogisticRegression: baseline vs reweighing ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7585     0.7620  0.0035
+                   balanced_acc    0.7286     0.7261 -0.0025
+                     recall_TPR    0.6603     0.6439 -0.0164
+                        roc_auc    0.8072     0.8037 -0.0035
+            equalised_odds_diff    0.1999     0.1245 -0.0754
+         disparate_impact_ratio    0.3989     0.5290  0.1301
+        statistical_parity_diff    0.2722     0.1901 -0.0821
+individual_fairness_consistency    0.9409     0.9428  0.0019
+
+========== LogisticRegression: baseline vs cal-EO[fnr] ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7585     0.7419 -0.0165
+                   balanced_acc    0.7286     0.5648 -0.1638
+                     recall_TPR    0.6603     0.1598 -0.5005
+                        roc_auc    0.8072     0.7212 -0.0861
+            equalised_odds_diff    0.1999     0.2428  0.0429
+         disparate_impact_ratio    0.3989     0.5313  0.1324
+        statistical_parity_diff    0.2722     0.0422 -0.2301
+individual_fairness_consistency    0.9409     0.9046 -0.0362
+
+========== LogisticRegression: baseline vs plain-EO ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7585     0.7062 -0.0523
+                   balanced_acc    0.7286     0.6820 -0.0466
+                     recall_TPR    0.6603     0.6266 -0.0337
+                        roc_auc    0.8072     0.8071 -0.0001
+            equalised_odds_diff    0.1999     0.0116 -0.1883
+         disparate_impact_ratio    0.3989     0.8176  0.4187
+        statistical_parity_diff    0.2722     0.0724 -0.1998
+individual_fairness_consistency    0.9409     0.9402 -0.0006
+
+========== LogisticRegression: baseline vs pref-rand ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7585     0.6837 -0.0747
+                   balanced_acc    0.7286     0.6824 -0.0461
+                     recall_TPR    0.6603     0.6795  0.0192
+                        roc_auc    0.8072     0.8071 -0.0001
+            equalised_odds_diff    0.1999     0.0233 -0.1766
+         disparate_impact_ratio    0.3989     0.8924  0.4935
+        statistical_parity_diff    0.2722     0.0471 -0.2251
+individual_fairness_consistency    0.9409     0.9402 -0.0006
+# log written 2026-06-21 17:26:16 | seed=2 | cv=5 | threshold_objective=cost (FN:FP=2.0:1)
+
+ ----- GradientBoosting -----
+train=14770  test=3693  features=48  train positive rate=0.281
+[GradientBoosting] best CV ROC-AUC = 0.8200 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+
+chosen threshold = 0.325
+
+-- overall performance --
+threshold          0.325000
+accuracy           0.756296
+balanced_acc       0.735858
+precision          0.553751
+recall_TPR         0.689124
+f1                 0.614065
+roc_auc            0.812590
+pr_auc             0.640572
+brier              0.149388
+FN               323.000000
+FP               577.000000
+TP               716.000000
+TN              2077.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.1922  0.5515  0.1117    0.8266
+NH White (priv)              0.4768  0.7453  0.3257    0.6999
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4771                       1.0000                       0.0000
+NH Black          0.2798                       0.5866                      -0.1972
+NH Other          0.2296                       0.4814                      -0.2474
+NH Asian          0.1674                       0.3509                      -0.3097
+Hispanic          0.1474                       0.3091                      -0.3296
+
+-- fairness summary --
+equalised_odds_diff                0.2140
+disparate_impact_ratio             0.4031
+statistical_parity_diff            0.2846
+individual_fairness_consistency    0.9310
+equalised_odds_diff: lower = fairer (0 = equal TPR & FPR)
+disparate_impact_ratio: 1.0 = parity; < 0.80 fails the 80% rule
+statistical_parity_diff: selection-rate gap vs reference group
+individual_fairness_: closer to 1 = similar people score similarly
+[GradientBoosting] log saved to /Users/jananjahed/Desktop/HML/HCML-preferential-randomisation/Model/results_log/GradientBoosting.log
+
+-- SHAP top-10 features | GradientBoosting | baseline before --
+AGE_x_COMORBID    0.43351
+EDUCYR            0.22467
+SEX_1.0           0.16878
+POVLEV23          0.16520
+VPCS42            0.13702
+WLKLIM31          0.11778
+TYPEPE42_2.0      0.11766
+MNHLTH53          0.11422
+HAVEUS42_1.0      0.11025
+REGION23_3.0      0.09011
+
+=== shap race-proxy features (top 10) | GradientBoosting | baseline before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38212
+POVLEV23          0.22603
+AGE_x_COMORBID    0.22475
+EDUCYR            0.21002
+INSCOV23_1.0      0.18136
+COMORBIDITY       0.17194
+ARTHDX            0.17103
+CANCERDX          0.16994
+REGION23_3.0      0.15078
+TYPEPE42_2.0      0.14341
+saved shap_beeswarm_GradientBoosting___baseline_before.png, shap_bar_GradientBoosting___baseline_before.png
+
+ ----- GradientBoosting (reweighing) -----
+train=14770  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8200 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+
+-- reweighing weights (per group x label cell) --
+          group     label    n  weight
+NH White (priv) high util 3011  0.7540
+NH White (priv)  low util 5055  1.1466
+      Non-White high util 1146  1.6465
+      Non-White  low util 5558  0.8667
+
+-- SHAP top-10 features | GradientBoosting | reweighing before --
+AGE_x_COMORBID    0.43351
+EDUCYR            0.22467
+SEX_1.0           0.16878
+POVLEV23          0.16520
+VPCS42            0.13702
+WLKLIM31          0.11778
+TYPEPE42_2.0      0.11766
+MNHLTH53          0.11422
+HAVEUS42_1.0      0.11025
+REGION23_3.0      0.09011
+
+=== shap race-proxy features (top 10) | GradientBoosting | reweighing before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.38212
+POVLEV23          0.22603
+AGE_x_COMORBID    0.22475
+EDUCYR            0.21002
+INSCOV23_1.0      0.18136
+COMORBIDITY       0.17194
+ARTHDX            0.17103
+CANCERDX          0.16994
+REGION23_3.0      0.15078
+TYPEPE42_2.0      0.14341
+saved shap_beeswarm_GradientBoosting___reweighing_before.png, shap_bar_GradientBoosting___reweighing_before.png
+
+-- SHAP top-10 features | GradientBoosting | reweighing after --
+AGE_x_COMORBID    0.38437
+EDUCYR            0.19478
+SEX_1.0           0.18745
+POVLEV23          0.13608
+VPCS42            0.13198
+WLKLIM31          0.13058
+COMORBIDITY       0.12566
+HAVEUS42_1.0      0.12259
+MNHLTH53          0.10920
+INSCOV23_3.0      0.10397
+
+=== shap race-proxy features (top 10) | GradientBoosting | reweighing after ===
+correlation between per-feature SHAP value and race
+POVLEV23          0.21089
+AGE_x_COMORBID    0.21009
+EDUCYR            0.19384
+BORNUSA           0.18966
+COMORBIDITY       0.18420
+ARTHDX            0.17309
+CANCERDX          0.16529
+TYPEPE42_2.0      0.14152
+HIDEG_1.0         0.13408
+REGION23_3.0      0.13157
+saved shap_beeswarm_GradientBoosting___reweighing_after.png, shap_bar_GradientBoosting___reweighing_after.png
+
+==== SHAP importance shift (top 10) before vs after reweighing | GradientBoosting ====
+BORNUSA           0.07325
+AGE_x_COMORBID    0.04914
+TYPEPE42_2.0      0.04602
+COMORBIDITY       0.04392
+EDUCYR            0.02989
+POVLEV23          0.02912
+REGION23_3.0      0.02672
+RTHLTH53          0.01943
+SEX_1.0           0.01868
+CANCERDX          0.01667
+saved shap_before_after_GradientBoosting_reweighing.png
+
+chosen threshold = 0.325
+
+-- overall performance --
+threshold          0.325000
+accuracy           0.754942
+balanced_acc       0.728767
+precision          0.553344
+recall_TPR         0.668912
+f1                 0.605664
+roc_auc            0.808939
+pr_auc             0.636690
+brier              0.150693
+FN               344.000000
+FP               561.000000
+TP               695.000000
+TN              2093.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.2238  0.5947  0.1407    0.8108
+NH White (priv)              0.4334  0.6992  0.2838    0.7101
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4336                       1.0000                       0.0000
+NH Black          0.3234                       0.7458                      -0.1102
+NH Asian          0.2361                       0.5444                      -0.1975
+NH Other          0.2296                       0.5296                      -0.2040
+Hispanic          0.1677                       0.3867                      -0.2659
+
+-- fairness summary --
+equalised_odds_diff                0.1430
+disparate_impact_ratio             0.5165
+statistical_parity_diff            0.2095
+individual_fairness_consistency    0.9315
+
+ ----- GradientBoosting (calibrated equalised odds | cost constraint=fnr) -----
+train=11077  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8218 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+
+chosen threshold = 0.305
+
+-- overall performance --
+threshold          0.305000
+accuracy           0.746006
+balanced_acc       0.580524
+precision          0.658307
+recall_TPR         0.202117
+f1                 0.309278
+roc_auc            0.731247
+pr_auc             0.494691
+brier              0.170413
+FN               829.000000
+FP               109.000000
+TP               210.000000
+TN              2545.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.1113  0.3920  0.0484    0.8491
+NH White (priv)              0.0664  0.1247  0.0336    0.6633
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH Other          0.1630                       2.4540                       0.0966
+NH Black          0.1606                       2.4177                       0.0941
+Hispanic          0.0856                       1.2892                       0.0192
+NH Asian          0.0815                       1.2280                       0.0151
+NH White          0.0664                       1.0000                       0.0000
+
+-- fairness summary --
+equalised_odds_diff                0.2674
+disparate_impact_ratio             0.5963
+statistical_parity_diff            0.0449
+individual_fairness_consistency    0.8933
+SANITY CHECK
+scores range: 0.00857079220699178 0.9205624418667038
+label rate: 0.08637963715136746
+
+-- SHAP top-10 features | GradientBoosting | cal_eqodds before --
+AGE_x_COMORBID    0.45285
+EDUCYR            0.22097
+POVLEV23          0.17842
+SEX_1.0           0.17030
+TYPEPE42_2.0      0.14025
+VPCS42            0.13212
+MNHLTH53          0.11201
+HAVEUS42_1.0      0.10364
+WLKLIM31          0.09993
+INSCOV23_3.0      0.09510
+
+=== shap race-proxy features (top 10) | GradientBoosting | cal_eqodds before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.37752
+AGE_x_COMORBID    0.22181
+POVLEV23          0.21890
+EDUCYR            0.20773
+COMORBIDITY       0.18924
+INSCOV23_1.0      0.18681
+HIDEG_1.0         0.18467
+ARTHDX            0.17428
+CANCERDX          0.15939
+TYPEPE42_2.0      0.15028
+saved shap_beeswarm_GradientBoosting___cal_eqodds_before.png, shap_bar_GradientBoosting___cal_eqodds_before.png
+
+[note] 'cal_eqodds' is post-processing: the model is unchanged, so SHAP attributions are identical before and after.
+
+ ----- GradientBoosting (plain equalised odds | Hardt et al.) -----
+train=11077  test=3693  features=48  train positive rate=0.281
+[] best CV ROC-AUC = 0.8218 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+
+chosen threshold = 0.305
+
+-- overall performance --
+threshold          0.305000
+accuracy           0.692933
+balanced_acc       0.681817
+precision          0.467443
+recall_TPR         0.656400
+f1                 0.546037
+roc_auc            0.812387
+pr_auc             0.643817
+brier              0.149189
+FN               357.000000
+FP               777.000000
+TP               682.000000
+TN              1877.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.3498  0.6412  0.2844    0.7019
+NH White (priv)              0.4314  0.6626  0.3013    0.6857
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4316                       1.0000                       0.0000
+NH Black          0.4289                       0.9936                      -0.0027
+NH Other          0.3630                       0.8409                      -0.0687
+NH Asian          0.3433                       0.7954                      -0.0883
+Hispanic          0.3080                       0.7135                      -0.1237
+
+-- fairness summary --
+equalised_odds_diff                0.0214
+disparate_impact_ratio             0.8107
+statistical_parity_diff            0.0817
+individual_fairness_consistency    0.9263
+SANITY CHECK
+scores range: 0.00857079220699178 0.9650457947070817
+label rate: 0.39507175737882483
+
+-- SHAP top-10 features | GradientBoosting | eq_odds_plain before --
+AGE_x_COMORBID    0.45285
+EDUCYR            0.22097
+POVLEV23          0.17842
+SEX_1.0           0.17030
+TYPEPE42_2.0      0.14025
+VPCS42            0.13212
+MNHLTH53          0.11201
+HAVEUS42_1.0      0.10364
+WLKLIM31          0.09993
+INSCOV23_3.0      0.09510
+
+=== shap race-proxy features (top 10) | GradientBoosting | eq_odds_plain before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.37752
+AGE_x_COMORBID    0.22181
+POVLEV23          0.21890
+EDUCYR            0.20773
+COMORBIDITY       0.18924
+INSCOV23_1.0      0.18681
+HIDEG_1.0         0.18467
+ARTHDX            0.17428
+CANCERDX          0.15939
+TYPEPE42_2.0      0.15028
+saved shap_beeswarm_GradientBoosting___eq_odds_plain_before.png, shap_bar_GradientBoosting___eq_odds_plain_before.png
+
+[note] 'eq_odds_plain' is post-processing: the model is unchanged, so SHAP attributions are identical before and after.
+[] best CV ROC-AUC = 0.8218 | params = {'clf__l2_regularization': 1.0, 'clf__learning_rate': 0.05, 'clf__max_depth': None, 'clf__max_leaf_nodes': 31, 'clf__min_samples_leaf': 20}
+group 0: t0=0.015 t1=0.519 p=0.590 obj=0.0130 L_R=4.282
+group 1: t0=0.115 t1=0.623 p=0.545 obj=0.0120 L_R=3.533
+
+chosen threshold = 0.305
+
+-- overall performance --
+threshold          0.305000
+accuracy           0.687517
+balanced_acc       0.689763
+precision          0.463117
+recall_TPR         0.694899
+f1                 0.555812
+roc_auc            0.812387
+pr_auc             0.643817
+brier              0.149189
+FN               317.000000
+FP               837.000000
+TP               722.000000
+TN              1817.000000
+
+-- per-group (binary race) --
+                     selection_rate     TPR     FPR  accuracy
+sensitive_feature_0                                          
+Non-White                    0.3723  0.6811  0.3031    0.6940
+NH White (priv)              0.4622  0.7005  0.3280    0.6823
+
+-- per-group (RACETHX, descriptive) --
+          selection_rate  disparate_impact_vs_NHWhite  stat_parity_diff_vs_NHWhite
+racethx                                                                           
+NH White          0.4624                       1.0000                       0.0000
+NH Black          0.4358                       0.9424                      -0.0266
+NH Asian          0.4335                       0.9374                      -0.0289
+NH Other          0.4222                       0.9131                      -0.0402
+Hispanic          0.3139                       0.6789                      -0.1485
+
+-- fairness summary --
+equalised_odds_diff                0.0249
+disparate_impact_ratio             0.8055
+statistical_parity_diff            0.0899
+individual_fairness_consistency    0.9263
+
+-- SHAP top-10 features | GradientBoosting | pref_rand before --
+AGE_x_COMORBID    0.45285
+EDUCYR            0.22097
+POVLEV23          0.17842
+SEX_1.0           0.17030
+TYPEPE42_2.0      0.14025
+VPCS42            0.13212
+MNHLTH53          0.11201
+HAVEUS42_1.0      0.10364
+WLKLIM31          0.09993
+INSCOV23_3.0      0.09510
+
+=== shap race-proxy features (top 10) | GradientBoosting | pref_rand before ===
+correlation between per-feature SHAP value and race
+BORNUSA           0.37752
+AGE_x_COMORBID    0.22181
+POVLEV23          0.21890
+EDUCYR            0.20773
+COMORBIDITY       0.18924
+INSCOV23_1.0      0.18681
+HIDEG_1.0         0.18467
+ARTHDX            0.17428
+CANCERDX          0.15939
+TYPEPE42_2.0      0.15028
+saved shap_beeswarm_GradientBoosting___pref_rand_before.png, shap_bar_GradientBoosting___pref_rand_before.png
+
+[note] 'pref_rand' is post-processing: the model is unchanged, so SHAP attributions are identical before and after.
+
+========== GradientBoosting: baseline vs reweighing ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7563     0.7549 -0.0014
+                   balanced_acc    0.7359     0.7288 -0.0071
+                     recall_TPR    0.6891     0.6689 -0.0202
+                        roc_auc    0.8126     0.8089 -0.0037
+            equalised_odds_diff    0.2140     0.1430 -0.0710
+         disparate_impact_ratio    0.4031     0.5165  0.1134
+        statistical_parity_diff    0.2846     0.2095 -0.0751
+individual_fairness_consistency    0.9310     0.9315  0.0005
+
+========== GradientBoosting: baseline vs cal-EO[fnr] ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7563     0.7460 -0.0103
+                   balanced_acc    0.7359     0.5805 -0.1553
+                     recall_TPR    0.6891     0.2021 -0.4870
+                        roc_auc    0.8126     0.7312 -0.0813
+            equalised_odds_diff    0.2140     0.2674  0.0534
+         disparate_impact_ratio    0.4031     0.5963  0.1932
+        statistical_parity_diff    0.2846     0.0449 -0.2397
+individual_fairness_consistency    0.9310     0.8933 -0.0376
+
+========== GradientBoosting: baseline vs plain-EO ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7563     0.6929 -0.0634
+                   balanced_acc    0.7359     0.6818 -0.0540
+                     recall_TPR    0.6891     0.6564 -0.0327
+                        roc_auc    0.8126     0.8124 -0.0002
+            equalised_odds_diff    0.2140     0.0214 -0.1926
+         disparate_impact_ratio    0.4031     0.8107  0.4076
+        statistical_parity_diff    0.2846     0.0817 -0.2029
+individual_fairness_consistency    0.9310     0.9263 -0.0047
+
+========== GradientBoosting: baseline vs pref-rand ==========
+                         metric  baseline  mitigated   delta
+                       accuracy    0.7563     0.6875 -0.0688
+                   balanced_acc    0.7359     0.6898 -0.0461
+                     recall_TPR    0.6891     0.6949  0.0058
+                        roc_auc    0.8126     0.8124 -0.0002
+            equalised_odds_diff    0.2140     0.0249 -0.1891
+         disparate_impact_ratio    0.4031     0.8055  0.4023
+        statistical_parity_diff    0.2846     0.0899 -0.1947
+individual_fairness_consistency    0.9310     0.9263 -0.0047
+saved /Users/jananjahed/Desktop/HML/HCML-preferential-randomisation/images/method_comparison.png
+saved /Users/jananjahed/Desktop/HML/HCML-preferential-randomisation/images/shap_summary.png
+
+########## SUMMARY METRIC TABLE ##########
+             model      method    EOD  recall  accuracy     DI
+LogisticRegression    baseline 0.1999  0.6603    0.7585 0.3989
+LogisticRegression  reweighing 0.1245  0.6439    0.7620 0.5290
+LogisticRegression cal-EO[fnr] 0.2428  0.1598    0.7419 0.5313
+LogisticRegression    plain-EO 0.0116  0.6266    0.7062 0.8176
+LogisticRegression   pref-rand 0.0233  0.6795    0.6837 0.8924
+  GradientBoosting    baseline 0.2140  0.6891    0.7563 0.4031
+  GradientBoosting  reweighing 0.1430  0.6689    0.7549 0.5165
+  GradientBoosting cal-EO[fnr] 0.2674  0.2021    0.7460 0.5963
+  GradientBoosting    plain-EO 0.0214  0.6564    0.6929 0.8107
+  GradientBoosting   pref-rand 0.0249  0.6949    0.6875 0.8055

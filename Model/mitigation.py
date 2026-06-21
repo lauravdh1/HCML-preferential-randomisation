@@ -11,6 +11,10 @@ from sklearn.model_selection import train_test_split
 from aif360.datasets import BinaryLabelDataset
 from aif360.algorithms.postprocessing import CalibratedEqOddsPostprocessing, EqOddsPostprocessing
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import common_architecture as ca
@@ -21,7 +25,7 @@ from common_architecture import (
 )
 from logistic_regression import build_logreg
 from gradient_boosting import build_gbm
-from shap_analysis import ShapAnalysis
+from shap_analysis import ShapAnalysis, plot_before_after
 
 
 def compute_reweighing_weights(y_train: pd.Series, race_train: pd.Series) -> np.ndarray:
@@ -75,6 +79,52 @@ def _weight_summary(weights: np.ndarray, y_train: pd.Series, race_train: pd.Seri
     return pd.DataFrame(rows)
 
 
+IMAGES_DIR = ca.PROJECT_ROOT / "images"
+
+
+def _shap_before_after(name, tag, X_test, race_test,
+                       model_before, Xtr_before,
+                       model_after=None, Xtr_after=None,
+                       model_changed=False, note_unchanged=True):
+    """Run SHAP for a mitigation: summary, race-proxy and plots, before/after.
+
+    If ``model_changed`` is True (e.g. reweighing retrains the model) the
+    'before' and 'after' models are explained separately, an importance-shift
+    table is printed and a before/after bar chart is saved. If False (a
+    post-processing method, where the model is untouched) SHAP is computed once
+    and returned as both before and after, since the attributions are identical.
+
+    :return: (shap_before, shap_after) ShapAnalysis objects.
+    """
+    before = ShapAnalysis(model_before, Xtr_before, name,
+                          f"{name} | {tag} before").compute(X_test)
+    before.summary()
+    before.race_proxy(race_test)
+    before.plot(IMAGES_DIR)
+
+    if not model_changed:
+        if note_unchanged:
+            print(f"\n[note] '{tag}' is post-processing: the model is "
+                  f"unchanged, so SHAP attributions are identical "
+                  f"before and after.")
+        return before, before
+
+    after = ShapAnalysis(model_after, Xtr_after, name,
+                         f"{name} | {tag} after").compute(X_test)
+    after.summary()
+    after.race_proxy(race_test)
+    after.plot(IMAGES_DIR)
+
+    delta = (after.mean_abs - before.mean_abs).abs().sort_values(
+        ascending=False)
+    print(f"\n==== SHAP importance shift (top 10) before vs after "
+          f"{tag} | {name} ====")
+    print(delta.head(10).round(5).to_string())
+    plot_before_after(before.mean_abs, after.mean_abs,
+                      f"{name}_{tag}", IMAGES_DIR)
+    return before, after
+
+
 # reweighing method
 def evaluate_reweighing(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path = ca.CLEAN_CSV) -> dict:
     """Evaluate the reweighing mitigation method on the given pipeline and grid.
@@ -96,37 +146,21 @@ def evaluate_reweighing(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path
 
     # tune hyperparameters once on unweighted data
     best, _ = tune_and_fit(pipe, grid, X_train, y_train)
-    best_params = best.get_params()
-
-    # ------
-    # shap before reweighing
-    shap_method_bf = ShapAnalysis(best, X_train, name, f"{name} | before reweighing")
-    shap_method_bf.compute(X_test)
-    shap_method_bf.summary()
-    shap_method_bf.race_proxy(race_test)
-    # ------
 
     # compute reweighing weights
     rw = compute_reweighing_weights(y_train, race_train)
     print("\n-- reweighing weights (per group x label cell) --")
     print(_weight_summary(rw, y_train, race_train).to_string(index=False))
 
-    # refit a fresh pipeline at best params with sample weights
-    rw_pipe = clone(pipe)
-    rw_pipe.set_params(**{k: v for k, v in best_params.items() if k in pipe.get_params()})
+    rw_pipe = clone(best)
     rw_pipe.fit(X_train, y_train, clf__sample_weight=rw)
 
-    # ------
-    # shap after reweighing
-    shap_method_af = ShapAnalysis(rw_pipe, X_train, name, f"{name} | reweighing")
-    shap_method_af.compute(X_test)
-    shap_method_af.summary()
-    shap_method_af.race_proxy(race_test)
-  
-    print(f"\n====shap importance shift (top 10) - before vs after reweighing | {name} ====")
-    delta = (shap_method_af.mean_abs - shap_method_bf.mean_abs).abs().sort_values(ascending=False)
-    print(delta.head(10).round(5).to_string())
-    # ------
+    # shap before vs after reweighing (model retrained -> attributions change)
+    shap_method_bf, shap_method_af = _shap_before_after(
+        name, "reweighing", X_test, race_test,
+        model_before=best, Xtr_before=X_train,
+        model_after=rw_pipe, Xtr_after=X_train,
+        model_changed=True)
 
     # threshold via the same rule as baseline
     thr = choose_threshold(rw_pipe, X_train, y_train)
@@ -189,7 +223,7 @@ def _run_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
                 csv_path: Path = ca.CLEAN_CSV) -> dict:
     """Evaluate post-processing equalised odds on the given trained model.
 
-    Shared function for both calibrated equalised odds and 
+    Shared function for both calibrated equalised odds and
     plain equalised odds (Hardt et al.).
 
     :param name: the name for the model to be trained.
@@ -234,7 +268,7 @@ def _run_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
         (proba_val >= thr).astype(int), index=y_val.index
     )
     val_pred = make_aif360_dataset(X_val, y_val_pred, race_val, proba_val)
-    # Convert model's probabilities to yes/no predictions, otherwise 
+    # Convert model's probabilities to yes/no predictions, otherwise
     # plain equalized odds uses true labels
     y_test_pred = pd.Series(
         (proba_test >= thr).astype(int), index=y_test.index
@@ -302,14 +336,12 @@ def _run_eqodds(name: str, pipe: ca.Pipeline, grid: dict,
     else:
         used_cost_constraint = None
 
-    # ------
-    # shap post process eqodds
+    # shap (post-processing: model unchanged -> before == after)
     tag = "cal_eqodds" if method == "calibrated" else "eq_odds_plain"
-    shap_method = ShapAnalysis(best, X_tr, name, f"{name} | {tag}")
-    shap_method.compute(X_test)
-    shap_method.summary()
-    shap_method.race_proxy(race_test)
-    # ------
+    shap_before, shap_after = _shap_before_after(
+        name, tag, X_test, race_test,
+        model_before=best, Xtr_before=X_tr, model_changed=False)
+    shap_method = shap_before
 
     return {
         "name": name, "model": best, "threshold": thr, "proba": proba_corrected,
@@ -407,13 +439,11 @@ def evaluate_pref_rand(name: str, pipe: ca.Pipeline, grid: dict, curve: str = "c
     tpr_gap = abs(tpr_priv - tpr_unpriv)
     fpr_gap = abs(fpr_priv - fpr_unpriv)
 
-    # ------
-    # shap post processing pref rand
-    shap_method = ShapAnalysis(best, X_tr, name, f"{name} | pref_rand")
-    shap_method.compute(X_test)
-    shap_method.summary()
-    shap_method.race_proxy(race_test)
-    # ------
+    # shap (post-processing: model unchanged -> before == after)
+    shap_before, shap_after = _shap_before_after(
+        name, "pref_rand", X_test, race_test,
+        model_before=best, Xtr_before=X_tr, model_changed=False)
+    shap_method = shap_before
 
     return {
         "name": name, "model": best, "threshold": thr, "proba": proba_test,
@@ -433,14 +463,15 @@ def evaluate_baseline(name: str, pipe: ca.Pipeline, grid: dict, csv_path: Path =
     """Unmitigated run for comparison reasons."""
     baseline_eval = ca.evaluate_model(name, pipe, grid, csv_path)
 
-    # ------
-    # shap baseline
-    shap_method = ShapAnalysis(baseline_eval["model"], baseline_eval["splits"]["X_train"], name, f"{name} | baseline")
-
-    shap_method.compute(baseline_eval["splits"]["X_test"])
-    shap_method.summary()
-    shap_method.race_proxy(baseline_eval["splits"]["race_test"])
-    # ------
+    # shap baseline (single model explanation)
+    shap_before, _ = _shap_before_after(
+        name, "baseline",
+        baseline_eval["splits"]["X_test"],
+        baseline_eval["splits"]["race_test"],
+        model_before=baseline_eval["model"],
+        Xtr_before=baseline_eval["splits"]["X_train"],
+        model_changed=False, note_unchanged=False)
+    baseline_eval["shap"] = shap_before
 
     return baseline_eval
 
@@ -534,6 +565,166 @@ def sweep_cost_constraint(name: str, builder,
     return pd.DataFrame(rows)
 
 
+MODEL_COLORS = {"LogisticRegression": "#4C72B0", "GradientBoosting": "#DD8452"}
+METHOD_ORDER = ["baseline", "reweighing", "cal-EO[fnr]", "plain-EO", "pref-rand"]
+
+
+def _proxy_corr(shap_obj, race) -> pd.Series:
+    """|correlation| between each feature's SHAP value and the race attribute."""
+    vals = shap_obj.shap_exp.values
+    race = np.asarray(race)
+    out = {}
+    for i, f in enumerate(shap_obj.feature_names):
+        col = vals[:, i]
+        out[f] = 0.0 if np.std(col) == 0 else abs(
+            float(np.corrcoef(col, race)[0, 1]))
+    return pd.Series(out)
+
+
+def plot_method_comparison(df: pd.DataFrame, path: Path) -> None:
+    """Two-panel results figure: EOD-by-method bars + recall-vs-EOD scatter."""
+    methods = [m for m in METHOD_ORDER if m in df["method"].unique()]
+    models = list(df["model"].unique())
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+
+    x = np.arange(len(methods))
+    width = 0.8 / max(len(models), 1)
+    for i, mdl in enumerate(models):
+        sub = df[df["model"] == mdl].set_index("method").reindex(methods)
+        ax1.bar(x + i * width, sub["EOD"].values, width, label=mdl,
+                color=MODEL_COLORS.get(mdl))
+    ax1.axhline(0.0, color="grey", lw=0.8)
+    ax1.set_xticks(x + width * (len(models) - 1) / 2)
+    ax1.set_xticklabels(methods, rotation=20, ha="right")
+    ax1.set_ylabel("equalised-odds difference")
+    ax1.set_title("Fairness by method (lower = fairer)", fontweight="bold")
+    ax1.legend(fontsize=9)
+
+    for mdl in models:
+        sub = df[df["model"] == mdl]
+        ax2.scatter(sub["EOD"], sub["recall"], s=90,
+                    color=MODEL_COLORS.get(mdl), label=mdl, zorder=3)
+        for _, r in sub.iterrows():
+            ax2.annotate(r["method"], (r["EOD"], r["recall"]),
+                         fontsize=8, xytext=(4, 4), textcoords="offset points")
+    ax2.set_xlabel("equalised-odds difference  (<- fairer)")
+    ax2.set_ylabel("recall / TPR  (^ catches more high-need patients)")
+    ax2.set_title("Accuracy-fairness trade-off\n(top-left = better)",
+                  fontweight="bold")
+    ax2.legend(fontsize=9)
+
+    fig.tight_layout()
+    fig.savefig(path, dpi=150, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"saved {path}")
+
+
+def _barh(ax, series: pd.Series, title: str, color: str, n: int = 8) -> None:
+    top = series.sort_values(ascending=False).head(n).iloc[::-1]
+    ax.barh(range(len(top)), top.values, color=color)
+    ax.set_yticks(range(len(top)))
+    ax.set_yticklabels(top.index, fontsize=8)
+    ax.set_title(title, fontsize=10)
+
+
+def plot_shap_summary(shap_data: dict, path: Path) -> None:
+    """One combined SHAP figure: rows = models, cols = (a) drivers, (b) race
+    proxies, (c) importance shift before vs after reweighing."""
+    models = list(shap_data.keys())
+    fig, axes = plt.subplots(len(models), 3, figsize=(16, 4.5 * len(models)),
+                             squeeze=False)
+    for r, mdl in enumerate(models):
+        d = shap_data[mdl]
+        col = MODEL_COLORS.get(mdl)
+
+        _barh(axes[r][0], d["drivers"], f"(a) top drivers | {mdl}", col)
+        axes[r][0].set_xlabel("mean |SHAP|")
+
+        _barh(axes[r][1], d["proxy"], f"(b) race proxies | {mdl}", "#C44E52")
+        axes[r][1].set_xlabel("|corr(SHAP, race)|")
+
+        # (c) before vs after reweighing for the top race-proxy features
+        proxy_top = d["proxy"].sort_values(ascending=False).head(8).index[::-1]
+        before = d["rw_before"].reindex(proxy_top).values
+        after = d["rw_after"].reindex(proxy_top).values
+        y = np.arange(len(proxy_top))
+        h = 0.4
+        ax = axes[r][2]
+        ax.barh(y - h / 2, before, h, label="before", color="#4C72B0")
+        ax.barh(y + h / 2, after, h, label="after", color="#DD8452")
+        ax.set_yticks(y)
+        ax.set_yticklabels(proxy_top, fontsize=8)
+        ax.set_xlabel("mean |SHAP|")
+        ax.set_title(f"(c) proxy importance: reweighing | {mdl}", fontsize=10)
+        ax.legend(fontsize=8)
+
+    fig.suptitle("SHAP: (a) prediction drivers  (b) race proxies  "
+                 "(c) importance shift after reweighing",
+                 fontweight="bold", fontsize=13)
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    fig.savefig(path, dpi=150, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"saved {path}")
+
+
+def run_all(results: dict) -> dict:
+    """Train every method for both models in one pass, print per-method delta
+    tables, and write the two summary figures into images/. Returns results."""
+    rows, shap_data = [], {}
+    for name, builder in [("LogisticRegression", build_logreg),
+                          ("GradientBoosting", build_gbm)]:
+        pipe_b, grid_b = builder()
+        base = evaluate_baseline(name, pipe_b, grid_b)
+
+        pipe, grid = builder()
+        rw = evaluate_reweighing(name, pipe, grid)
+        pipe, grid = builder()
+        cal = evaluate_cal_eqodds(name, pipe, grid, cost_constraint="fnr")
+        pipe, grid = builder()
+        plain = evaluate_eqodds(name, pipe, grid)
+
+        collected = [("baseline", base), ("reweighing", rw),
+                     ("cal-EO[fnr]", cal), ("plain-EO", plain)]
+        try:
+            pipe, grid = builder()
+            pref = evaluate_pref_rand(name, pipe, grid)
+            collected.append(("pref-rand", pref))
+        except Exception as exc:
+            print(f"[skip pref-rand for {name}]: {exc}")
+
+        # per-method delta tables, so the consolidated log stays informative
+        for label, res in collected[1:]:
+            print(f"\n========== {name}: baseline vs {label} ==========")
+            print(_delta_table(base, res).to_string(index=False))
+
+        for label, res in collected:
+            rows.append({
+                "model": name, "method": label,
+                "EOD": res["fairness"]["equalised_odds_diff"],
+                "recall": res["overall"]["recall_TPR"],
+                "accuracy": res["overall"]["accuracy"],
+                "DI": res["fairness"]["disparate_impact_ratio"],
+            })
+
+        race = base["splits"]["race_test"]
+        shap_data[name] = {
+            "drivers": base["shap"].mean_abs,
+            "proxy": _proxy_corr(base["shap"], race),
+            "rw_before": rw["shap_before"].mean_abs,
+            "rw_after": rw["shap_after"].mean_abs,
+        }
+
+    df = pd.DataFrame(rows)
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    plot_method_comparison(df, IMAGES_DIR / "method_comparison.png")
+    plot_shap_summary(shap_data, IMAGES_DIR / "shap_summary.png")
+    print("\n########## SUMMARY METRIC TABLE ##########")
+    print(df.round(4).to_string(index=False))
+    results["summary"] = df
+    return results
+
+
 def main(method: str):
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_path = Path(LOG_DIR) / f"mitigation_{method}_{stamp}.log"
@@ -543,6 +734,9 @@ def main(method: str):
               f" | seed={SEED} | threshold_objective={THRESHOLD_OBJECTIVE}"
               f" (FN:FP={COST_FN_FP_RATIO}:1) | mitigation={method}")
         results = {}
+
+        if method == "all":
+            return run_all(results)
 
         if method == "eq_odds_sweep":
             all_tables = []
@@ -597,19 +791,6 @@ def main(method: str):
             print(" recall_TPR / accuracy: the cost we pay for fairness")
             print(" individual_fairness: watch for drops")
 
-            # ------
-            # shap
-            if method == "reweighing":
-                print(f"\n==========shap importance shift (top 10): before vs after | {name}==========")
-                delta = (mitigated["shap_after"].mean_abs - mitigated["shap_before"].mean_abs).abs().sort_values(ascending=False)
-                print(delta.head(10).round(5).to_string())
-            else:
-                if "shap" in baseline and "shap" in mitigted:
-                    delta = (mitigated["shap"].mean_abs - baseline["shap"].mean_abs).abs().sort_values(ascenfing=False)
-                    print(f"\n==========shap difference vs baseline (top 10): | {name}==========")
-                    print(delta.head(10).round(5).to_string())
-            # ------
-
             results[name] = {"baseline": baseline, "mitigated": mitigated}
         return results
 
@@ -626,7 +807,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--method", type=str, required=True,
-        help="Possible options are: reweighing, eq_odds_calibrated, eq_odds_plain, eq_odds_sweep, pref_rand"
+        help="Possible options are: reweighing, eq_odds_calibrated, eq_odds_plain, eq_odds_sweep, pref_rand, all"
     )
     args = parser.parse_args()
 
